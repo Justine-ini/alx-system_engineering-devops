@@ -1,19 +1,30 @@
 #!/usr/bin/env bash
-# Configure Nginx server so that /redirect_me is redirecting to another page.
-# But the main domain still shows Hello world
+# Configure your Nginx server to have a custom 404 page
 
-apt-get update -y && apt-get upgrade -y
-apt-get install nginx -y
-chown -R "$USER":"$USER" /var/www/html
-echo "Hello World!" > /var/www/html/index.nginx-debian.html
-line="\\\\tlocation /redirect_me {\n\t\treturn 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;\n\t}"
-sed -i "48i $line" /etc/nginx/sites-available/default
+apt-get update
+apt-get install -y nginx
 
-mkdir -p /var/www/default
-echo "Ceci n'est pas une page" > /var/www/default/404.html
-line1="\\\tlocation = /404.html {\n\t\t root /var/www/default;\n\t}"
-sed -i "29i $line1" /etc/nginx/sites-available/default
-line2="\\\terror_page 404 /404.html;"
-sed -i "32i $line2" /etc/nginx/sites-available/default
+mkdir /etc/nginx/html
+touch /etc/nginx/html/index.html
+echo "Hello World!" > /etc/nginx/html/index.html
+touch /etc/nginx/html/404.html
+echo "Ceci n'est pas une page" > /etc/nginx/html/404.html
+
+printf %s "server {
+    listen 80;
+    listen [::]:80 default_server;
+    root   /etc/nginx/html;
+    index  index.html index.htm;
+
+    location /redirect_me {
+        return 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;
+    }
+
+    error_page 404 /404.html;
+    location /404 {
+      root /etc/nginx/html;
+      internal;
+    }
+}" > /etc/nginx/sites-available/default
 
 service nginx restart
